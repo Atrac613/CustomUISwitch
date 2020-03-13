@@ -15,7 +15,7 @@ public class CustomSwitch: UIControl {
     public var animationDelay: Double = 0
     public var animationSpriteWithDamping = CGFloat(0.7)
     public var initialSpringVelocity = CGFloat(0.5)
-    public var animationOptions: UIView.AnimationOptions = [UIViewAnimationOptions.curveEaseOut, UIViewAnimationOptions.beginFromCurrentState, UIViewAnimationOptions.allowUserInteraction]
+    public var animationOptions: UIView.AnimationOptions = [UIView.AnimationOptions.curveEaseOut, UIView.AnimationOptions.beginFromCurrentState, UIView.AnimationOptions.allowUserInteraction]
     
     @IBInspectable public var isOn:Bool = true
     
@@ -26,6 +26,8 @@ public class CustomSwitch: UIControl {
             self.layoutSubviews()
         }
     }
+    
+    @IBInspectable public var isGradientColorsOn:Bool = true
     
     @IBInspectable  public var onTintColor: UIColor = UIColor(red: 144/255, green: 202/255, blue: 119/255, alpha: 1) {
         didSet {
@@ -157,6 +159,7 @@ public class CustomSwitch: UIControl {
         }
     }
     
+    public var gradientLayer: CAGradientLayer = CAGradientLayer()
     public var thumbView = CustomThumbView(frame: CGRect.zero)
     public var onImageView = UIImageView(frame: CGRect.zero)
     public var offImageView = UIImageView(frame: CGRect.zero)
@@ -193,7 +196,12 @@ extension CustomSwitch {
         self.thumbView.layer.shadowOpacity = self.thumbShaddowOppacity
         self.thumbView.layer.shadowOffset = self.thumbShadowOffset
         
-        self.backgroundColor = self.isOn ? self.onTintColor : self.offTintColor
+        self.gradientLayer.frame = self.bounds
+        self.gradientLayer.colors = [self.offTintColor.cgColor, self.onTintColor.cgColor]
+        self.gradientLayer.startPoint = CGPoint.init(x: 0, y: 0.5)
+        self.gradientLayer.endPoint = CGPoint.init(x: 1, y: 0.5)
+        self.layer.addSublayer(self.gradientLayer)
+        self.backgroundColor = .clear
         
         self.addSubview(self.thumbView)
         self.addSubview(self.onImageView)
@@ -216,7 +224,7 @@ extension CustomSwitch {
         return true
     }
     
-    func setOn(on:Bool, animated:Bool) {
+    public func setOn(on:Bool, animated:Bool) {
         
         switch animated {
         case true:
@@ -243,13 +251,22 @@ extension CustomSwitch {
     
     private func setupViewsOnAction() {
         self.thumbView.frame.origin.x = self.isOn ? self.onPoint.x : self.offPoint.x
-        self.backgroundColor = self.isOn ? self.onTintColor : self.offTintColor
+        
+        if self.isGradientColorsOn {
+            self.gradientLayer.colors = [self.offTintColor.cgColor, self.onTintColor.cgColor]
+        } else {
+            let color = self.isOn ? self.onTintColor.cgColor : self.offTintColor.cgColor
+            self.gradientLayer.colors = [color, color]
+        }
+        
+        self.backgroundColor = .clear
+        
         self.setOnOffImageFrame()
     }
 
     private func completeAction() {
         self.isAnimating = false
-        self.sendActions(for: UIControlEvents.valueChanged)
+        self.sendActions(for: UIControl.Event.valueChanged)
     }
     
 }
@@ -261,8 +278,10 @@ extension CustomSwitch {
         super.layoutSubviews()
         
         if !self.isAnimating {
-            self.layer.cornerRadius = self.bounds.size.height * self.cornerRadius
-            self.backgroundColor = self.isOn ? self.onTintColor : self.offTintColor
+            self.gradientLayer.cornerRadius = self.bounds.size.height * self.cornerRadius
+            
+            self.gradientLayer.colors = [self.offTintColor.cgColor, self.onTintColor.cgColor]
+            self.backgroundColor = .clear
             
             // thumb managment
             // get thumb size, if none set, use one from bounds
